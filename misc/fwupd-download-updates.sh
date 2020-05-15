@@ -31,13 +31,31 @@ while [ -n "$1" ]; do
     shift
 done
 
-if [ -d "$FWUPD_UPDATES_DIR" ];
-    echo "fwupd updates dir does not exists: "
+if [ ! -d $FWUPD_UPDATES_DIR ]; then
+    echo "fwupd updates dir does not exist: $FWUPD_UPDATES_DIR" >&2
+    exit 1
+fi
 
-if [ $CHECK_ONLY -eq 1 ]; then
+if [ "$CHECK_ONLY" == "1" ]; then
     echo "Check only mode"
 fi
 
-if [ $CLEAN -eq 1 ]; then
+if [ "$CLEAN" == "1" ]; then
     echo "Cleaning downloaded files"
+    rm -f $FWUPD_UPDATES_DIR/*
+fi
+
+if [ -f $FWUPD_UPDATES_DIR/sample-image.jpg ]; then
+    echo "File already exists."
+else
+    wget -O $FWUPD_UPDATES_DIR/sample-image.jpg \
+        https://cloud.3mdeb.com/index.php/s/29QbbAqWMw8cSP4/preview
+fi
+
+cmd="/usr/lib/qubes/qrexec-client-vm dom0 qubes.ReceiveUpdates /usr/lib/qubes/qfile-agent"
+qrexec_exit_code=0
+$cmd "$FWUPD_UPDATES_DIR"/*.jpg || { qrexec_exit_code=$? ; true; };
+if [ ! "$qrexec_exit_code" = "0" ]; then
+    echo "'$cmd $FWUPD_UPDATES_DIR/*.jpg' failed with exit code ${qrexec_exit_code}!" >&2
+    exit "$qrexec_exit_code"
 fi
