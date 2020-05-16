@@ -52,9 +52,9 @@ else
         https://cloud.3mdeb.com/index.php/s/29QbbAqWMw8cSP4/preview
 fi
 
-cmd="/usr/lib/qubes/qrexec-client-vm dom0 qubes.ReceiveUpdates /usr/lib/qubes/qfile-agent"
+cmd="/usr/lib/qubes/qrexec-client-vm dom0 qubes.ReceiveUpdates"
 qrexec_exit_code=0
-$cmd "$FWUPD_UPDATES_DIR"/*.jpg || { qrexec_exit_code=$? ; true; };
+$cmd || { qrexec_exit_code=$? ; true; };
 if [ ! "$qrexec_exit_code" = "0" ]; then
     echo "'$cmd $FWUPD_UPDATES_DIR/*.jpg' failed with exit code ${qrexec_exit_code}!" >&2
     exit "$qrexec_exit_code"
