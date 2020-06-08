@@ -1,6 +1,6 @@
 #!/bin/bash
 
-FWUPD_UPDATES_DIR=/home/user/.cache/fwupd/fwupd-updates
+FWUPD_UPDATES_DIR=/home/user/.cache/fwupd
 
 echo "Running fwupd download script..."
 
@@ -10,6 +10,7 @@ METADATA=
 SHASUM=
 UPDATE=
 URL=
+FW_NAME=
 
 while [ -n "$1" ]; do
     case $1 in
@@ -25,6 +26,7 @@ while [ -n "$1" ]; do
         --url=*)
             UPDATE=1
             URL=${1#--url=}
+            FW_NAME=${1#https://fwupd.org/downloads/}
             ;;
         --sha=*)
             SHASUM=${1#--sha=}
@@ -52,8 +54,8 @@ fi
 
 if [ "$CLEAN" == "1" ]; then
     echo "Cleaning cache."
-    rm -f $FWUPD_UPDATES_DIR/metadata
-    rm -f $FWUPD_UPDATES_DIR/updates
+    rm -f $FWUPD_UPDATES_DIR/metadata/*
+    rm -f $FWUPD_UPDATES_DIR/updates/*
 fi
 
 if [ "$METADATA" == "1" ]; then
@@ -62,17 +64,18 @@ if [ "$METADATA" == "1" ]; then
         https://cdn.fwupd.org/downloads/firmware.xml.gz
     wget -P $FWUPD_UPDATES_DIR/metadata \
         https://cdn.fwupd.org/downloads/firmware.xml.gz.asc
-    gpg --verify firmware.xml.gz.asc firmware.xml.gz.asc
+    gpg --verify $FWUPD_UPDATES_DIR/metadata/firmware.xml.gz.asc \
+        $FWUPD_UPDATES_DIR/metadata/firmware.xml.gz
     if [ ! $? -eq 0 ]; then
-        rm -f $FWUPD_UPDATES_DIR/metadata/*
         echo "Signature did NOT match. Exiting..."
         exit 1
     fi
-    FLAG="user:'touch ~/.cache/fwupd/metaflag'"
 fi
 
 if [ "$UPDATE" == "1" ]; then
-    FILE_NAME=${URL#https://fwupd.org/downloads/}
+    echo "$FILE_NAME"
+    echo "$FILE_NAME"
+    echo "$FILE_NAME"
     echo "$SHASUM  $NAME" > $FWUPD_UPDATES_DIR/updates/sha1-$FILE_NAME
     echo "Downloading firmware update $NAME"
     wget -P $FWUPD_UPDATES_DIR/updates $URL
@@ -86,15 +89,8 @@ if [ "$UPDATE" == "1" ]; then
         $FWUPD_UPDATES_DIR/updates/updateflag-$FILE_NAME'"
 fi
 
-CMD_FLAG="/usr/lib/qubes/qrexec-client-vm dom0 " + FLAG
 CMD="/usr/lib/qubes/qrexec-client-vm dom0 fwupd.ReceiveUpdates"
 qrexec_exit_code=0
-
-$CMD_FLAG || { qrexec_exit_code=$? ; true; };
-if [ ! "$qrexec_exit_code" = "0" ]; then
-    echo "'$CMD_FLAG' failed with exit code ${qrexec_exit_code}!" >&2
-    exit "$qrexec_exit_code"
-fi
 
 $CMD || { qrexec_exit_code=$? ; true; };
 if [ ! "$qrexec_exit_code" = "0" ]; then
