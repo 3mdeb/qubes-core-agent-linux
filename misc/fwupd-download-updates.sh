@@ -11,8 +11,6 @@ SHASUM=
 UPDATE=
 URL=
 
-
-
 while [ -n "$1" ]; do
     case $1 in
         --CHECK_ONLY)
@@ -67,26 +65,40 @@ if [ "$METADATA" == "1" ]; then
     gpg --verify firmware.xml.gz.asc firmware.xml.gz.asc
     if [ ! $? -eq 0 ]; then
         rm -f $FWUPD_UPDATES_DIR/metadata/*
-        echo "Wrong signature. Exiting..."
+        echo "Signature did NOT match. Exiting..."
         exit 1
     fi
+    FLAG="user:'touch ~/.cache/fwupd/metaflag'"
 fi
 
 if [ "$UPDATE" == "1" ]; then
-    echo "Downloading firmware update $URL"
+    FILE_NAME=${URL#https://fwupd.org/downloads/}
+    echo "$SHASUM  $NAME" > $FWUPD_UPDATES_DIR/updates/sha1-$FILE_NAME
+    echo "Downloading firmware update $NAME"
     wget -P $FWUPD_UPDATES_DIR/updates $URL
-    wget -P $FWUPD_UPDATES_DIR/updates $URL
+    sha1sum -c $FWUPD_UPDATES_DIR/updates/sha1-$FILE_NAME
     if [ ! $? -eq 0 ]; then
-        rm -f $FWUPD_UPDATES_DIR/metadata/*
-        echo "Wrong signature. Exiting..."
+        rm -f $FWUPD_UPDATES_DIR/updates/*
+        echo "Computed checksum did NOT match. Exiting..."
         exit 1
     fi
+    FLAG="user:'echo "$SHASUM  $NAME" > \
+        $FWUPD_UPDATES_DIR/updates/updateflag-$FILE_NAME'"
 fi
 
-cmd="/usr/lib/qubes/qrexec-client-vm dom0 fwupd.ReceiveUpdates"
+CMD_FLAG="/usr/lib/qubes/qrexec-client-vm dom0 " + FLAG
+CMD="/usr/lib/qubes/qrexec-client-vm dom0 fwupd.ReceiveUpdates"
 qrexec_exit_code=0
-$cmd || { qrexec_exit_code=$? ; true; };
+
+$CMD_FLAG || { qrexec_exit_code=$? ; true; };
 if [ ! "$qrexec_exit_code" = "0" ]; then
-    echo "'$cmd $FWUPD_UPDATES_DIR/*.jpg' failed with exit code ${qrexec_exit_code}!" >&2
+    echo "'$CMD_FLAG' failed with exit code ${qrexec_exit_code}!" >&2
+    exit "$qrexec_exit_code"
+fi
+
+$CMD || { qrexec_exit_code=$? ; true; };
+if [ ! "$qrexec_exit_code" = "0" ]; then
+    echo "'$CMD $FWUPD_UPDATES_DIR' failed with exit code \
+        ${qrexec_exit_code}!" >&2
     exit "$qrexec_exit_code"
 fi
