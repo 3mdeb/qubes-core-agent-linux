@@ -26,7 +26,7 @@ while [ -n "$1" ]; do
         --url=*)
             UPDATE=1
             URL=${1#--url=}
-            FW_NAME=${1#https://fwupd.org/downloads/}
+            FW_NAME=${1#--url=https://fwupd.org/downloads/}
             ;;
         --sha=*)
             SHASUM=${1#--sha=}
@@ -73,20 +73,16 @@ if [ "$METADATA" == "1" ]; then
 fi
 
 if [ "$UPDATE" == "1" ]; then
-    echo "$FILE_NAME"
-    echo "$FILE_NAME"
-    echo "$FILE_NAME"
-    echo "$SHASUM  $NAME" > $FWUPD_UPDATES_DIR/updates/sha1-$FILE_NAME
-    echo "Downloading firmware update $NAME"
+    echo "$SHASUM  $FWUPD_UPDATES_DIR/updates/$FW_NAME" \
+        > $FWUPD_UPDATES_DIR/updates/sha1-$FW_NAME
+    echo "Downloading firmware update $FW_NAME"
     wget -P $FWUPD_UPDATES_DIR/updates $URL
-    sha1sum -c $FWUPD_UPDATES_DIR/updates/sha1-$FILE_NAME
+    sha1sum -c $FWUPD_UPDATES_DIR/updates/sha1-$FW_NAME
     if [ ! $? -eq 0 ]; then
         rm -f $FWUPD_UPDATES_DIR/updates/*
         echo "Computed checksum did NOT match. Exiting..."
         exit 1
     fi
-    FLAG="user:'echo "$SHASUM  $NAME" > \
-        $FWUPD_UPDATES_DIR/updates/updateflag-$FILE_NAME'"
 fi
 
 CMD="/usr/lib/qubes/qrexec-client-vm dom0 fwupd.ReceiveUpdates"
