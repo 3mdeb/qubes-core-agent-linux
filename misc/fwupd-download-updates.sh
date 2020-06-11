@@ -54,8 +54,8 @@ fi
 
 if [ "$CLEAN" == "1" ]; then
     echo "Cleaning cache."
-    rm -f $FWUPD_UPDATES_DIR/metadata/*
-    rm -f $FWUPD_UPDATES_DIR/updates/*
+    rm -rf $FWUPD_UPDATES_DIR/metadata/*
+    rm -rf $FWUPD_UPDATES_DIR/updates/*
 fi
 
 if [ "$METADATA" == "1" ]; then
@@ -83,14 +83,4 @@ if [ "$UPDATE" == "1" ]; then
         echo "Computed checksum did NOT match. Exiting..."
         exit 1
     fi
-fi
-
-CMD="/usr/lib/qubes/qrexec-client-vm dom0 fwupd.ReceiveUpdates"
-qrexec_exit_code=0
-
-$CMD || { qrexec_exit_code=$? ; true; };
-if [ ! "$qrexec_exit_code" = "0" ]; then
-    echo "'$CMD $FWUPD_UPDATES_DIR' failed with exit code \
-        ${qrexec_exit_code}!" >&2
-    exit "$qrexec_exit_code"
 fi
