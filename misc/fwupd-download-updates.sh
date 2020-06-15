@@ -60,6 +60,7 @@ fi
 
 if [ "$METADATA" == "1" ]; then
     echo "Downloading metadata."
+    rm -rf $FWUPD_UPDATES_DIR/metadata/*
     wget -P $FWUPD_UPDATES_DIR/metadata \
         https://cdn.fwupd.org/downloads/firmware.xml.gz
     wget -P $FWUPD_UPDATES_DIR/metadata \
